@@ -8,12 +8,23 @@ import (
 	"time"
 )
 
-type Log struct {
+type log struct {
 	DirName string
 }
 
-func (log *Log) SetDirName(name string) {
-	log.DirName = name
+var localLog *log
+var localLogOnce sync.Once
+
+func GetCmdLog() *log {
+	localLogOnce.Do(func() {
+		localLog = &log{}
+	})
+
+	return localLog
+}
+
+func (localLog *log) SetDirName(name string) {
+	localLog.DirName = name
 }
 
 const (
@@ -22,17 +33,17 @@ const (
 	ErrorLog
 )
 
-func (log *Log) GetDirName() string {
-	if len(log.DirName) != 0 {
-		return log.DirName
+func (localLog *log) getDirName() string {
+	if len(localLog.DirName) != 0 {
+		return localLog.DirName
 	}
 
 	//Mon Jan 2 15:04:05 -0700 MST 2006
 	return time.Now().Format("01-02-15-04-05")
 }
 
-func (log *Log) initStandardFile() (changeLog, detailLog, errLog *os.File) {
-	dir := log.GetDirName()
+func (localLog *log) initStandardFile() (changeLog, detailLog, errLog *os.File) {
+	dir := localLog.getDirName()
 	os.Mkdir("./"+dir, os.ModePerm)
 
 	changePath := fmt.Sprintf("./%s/change.txt", dir)
@@ -60,10 +71,10 @@ func (log *Log) initStandardFile() (changeLog, detailLog, errLog *os.File) {
 var logOnce sync.Once
 var changeLog, detailLog, errorLog *os.File
 
-func (log *Log) GetLog(index int) *os.File {
+func (localLog *log) GetLog(index int) *os.File {
 
 	logOnce.Do(func() {
-		changeLog, detailLog, errorLog = log.initStandardFile()
+		changeLog, detailLog, errorLog = localLog.initStandardFile()
 	})
 
 	switch index {
@@ -78,14 +89,14 @@ func (log *Log) GetLog(index int) *os.File {
 	panic(fmt.Sprintf("error index %d", index))
 }
 
-func (log *Log) WriteLog(index int, piece ...interface{}) {
-	file := log.GetLog(index)
+func (localLog *log) WriteLog(index int, piece ...interface{}) {
+	file := localLog.GetLog(index)
 	str := strings.Trim(fmt.Sprintf("%v", piece), "[]")
 	n, err := file.WriteString(str + "\n")
-	fmt.Println(n ,err)
+	fmt.Println(n, err)
 }
 
-func (log *Log) Close() {
+func (localLog *log) Close() {
 	if changeLog == nil {
 		return
 	}

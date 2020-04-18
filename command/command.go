@@ -1,6 +1,8 @@
 package command
 
-import "context"
+import (
+	"context"
+)
 
 type Command interface {
 	Execute(ctx context.Context)
@@ -19,6 +21,7 @@ func (invoke *Invoker) AddCmd(cmd Command) {
 }
 
 func (invoke *Invoker) SetRunEnv() {
+
 }
 
 func (invoke *Invoker) ExecuteCommand(ctx context.Context) {
